@@ -3,8 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <title>Dual Chess</title>
+
 <style>
 body { font-family: Arial; text-align:center; }
+
 #board {
   display:grid;
   grid-template-columns: repeat(9,60px);
@@ -13,14 +15,17 @@ body { font-family: Arial; text-align:center; }
   justify-content:center;
   margin-top:20px;
 }
+
 .cell {
   width:60px;height:60px;
   display:flex;align-items:center;justify-content:center;
   font-size:22px;cursor:pointer;
 }
+
 .light { background:#f0d9b5; }
 .dark { background:#b58863; }
 .highlight { background:yellow !important; }
+
 #legend { margin-top:20px; font-size:14px; }
 </style>
 </head>
@@ -44,20 +49,20 @@ let game = [];
 let selected = null;
 let current = "chess";
 
-// init empty
+// INIT BOARD
 for(let y=0;y<10;y++){
   game[y]=[];
   for(let x=0;x<9;x++) game[y][x]=null;
 }
 
-// --- CHESS SETUP ---
+// CHESS SETUP
 let chessBack = ["rook","knight","bishop","queen","king","bishop","knight","rook"];
 for(let i=0;i<8;i++){
   game[9][i]={type:chessBack[i],system:"chess"};
   game[8][i]={type:"pawn",system:"chess"};
 }
 
-// --- XIANGQI SETUP ---
+// XIANGQI SETUP
 game[0][0]=game[0][8]={type:"chariot",system:"xiangqi"};
 game[0][1]=game[0][7]={type:"horse",system:"xiangqi"};
 game[0][2]=game[0][6]={type:"elephant",system:"xiangqi"};
@@ -70,7 +75,7 @@ for(let i=0;i<9;i+=2){
   game[3][i]={type:"soldier",system:"xiangqi"};
 }
 
-// draw
+// DRAW BOARD
 function draw(){
   board.innerHTML="";
   for(let y=0;y<10;y++){
@@ -87,6 +92,7 @@ function draw(){
   }
 }
 
+// SYMBOLS
 function symbol(p){
   if(p.system==="chess"){
     return {king:"♔",queen:"♕",rook:"♖",bishop:"♗",knight:"♘",pawn:"♙"}[p.type];
@@ -95,14 +101,26 @@ function symbol(p){
   }
 }
 
+// CLICK HANDLER (FIXED: NO FRIENDLY FIRE)
 function click(x,y){
   let p=game[y][x];
 
   if(selected){
     let moves=getMoves(selected.x,selected.y);
+
     if(moves.some(m=>m.x===x && m.y===y)){
+
+      let target = game[y][x];
+
+      // 🚫 PREVENT capturing your own piece
+      if(target && target.system === current){
+        return;
+      }
+
+      // ✅ MOVE
       game[y][x]=game[selected.y][selected.x];
       game[selected.y][selected.x]=null;
+
       selected=null;
       switchTurn();
       draw();
@@ -117,27 +135,30 @@ function click(x,y){
   }
 }
 
+// HIGHLIGHT MOVES
 function highlight(x,y){
   let moves=getMoves(x,y);
   let cells=document.querySelectorAll(".cell");
+
   moves.forEach(m=>{
     cells[m.y*9+m.x].classList.add("highlight");
   });
 }
 
+// TURN SWITCH
 function switchTurn(){
   current=current==="chess"?"xiangqi":"chess";
   document.getElementById("turn").textContent="Turn: "+(current==="chess"?"Chess":"Xiangqi");
 }
 
-// --- MOVE LOGIC (simplified but playable) ---
-
+// MOVE GENERATION
 function getMoves(x,y){
   let p=game[y][x];
   if(!p) return [];
   return p.system==="chess" ? chessMoves(x,y,p) : xiangqiMoves(x,y,p);
 }
 
+// CHESS MOVES
 function chessMoves(x,y,p){
   let m=[];
   let dirs=[[1,0],[-1,0],[0,1],[0,-1],[1,1],[-1,-1],[1,-1],[-1,1]];
@@ -148,7 +169,10 @@ function chessMoves(x,y,p){
 
   if(p.type==="knight"){
     [[1,2],[2,1],[-1,2],[-2,1],[1,-2],[2,-1],[-1,-2],[-2,-1]]
-    .forEach(d=>{let nx=x+d[0],ny=y+d[1]; if(inBoard(nx,ny)) m.push({x:nx,y:ny});});
+    .forEach(d=>{
+      let nx=x+d[0],ny=y+d[1];
+      if(inBoard(nx,ny)) m.push({x:nx,y:ny});
+    });
   }
 
   if(p.type==="bishop"){
@@ -173,17 +197,7 @@ function chessMoves(x,y,p){
   return m;
 }
 
-function slide(m,x,y,dirs){
-  dirs.forEach(d=>{
-    for(let i=1;i<10;i++){
-      let nx=x+d[0]*i, ny=y+d[1]*i;
-      if(!inBoard(nx,ny)) break;
-      m.push({x:nx,y:ny});
-      if(game[ny][nx]) break;
-    }
-  });
-}
-
+// XIANGQI MOVES
 function xiangqiMoves(x,y,p){
   let m=[];
 
@@ -216,10 +230,26 @@ function xiangqiMoves(x,y,p){
   return m;
 }
 
+// SLIDING PIECES
+function slide(m,x,y,dirs){
+  dirs.forEach(d=>{
+    for(let i=1;i<10;i++){
+      let nx=x+d[0]*i, ny=y+d[1]*i;
+      if(!inBoard(nx,ny)) break;
+
+      m.push({x:nx,y:ny});
+
+      if(game[ny][nx]) break;
+    }
+  });
+}
+
+// BOUNDS
 function inBoard(x,y){
   return x>=0 && x<9 && y>=0 && y<10;
 }
 
+// START GAME
 draw();
 </script>
 
