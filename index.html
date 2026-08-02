@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Dual Chess (Chess vs Xiangqi)</title>
+<style>
+  body { font-family: Arial; text-align: center; }
+  #board {
+    display: grid;
+    grid-template-columns: repeat(9, 60px);
+    grid-template-rows: repeat(10, 60px);
+    gap: 2px;
+    justify-content: center;
+    margin-top: 20px;
+  }
+  .cell {
+    width: 60px; height: 60px;
+    background: #f0d9b5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 22px;
+  }
+  .dark { background: #b58863; }
+  .highlight { background: yellow !important; }
+</style>
+</head>
+<body>
+
+<h2>♟️ Chess vs 🀄 Xiangqi</h2>
+<p id="turn">Turn: Chess</p>
+
+<div id="board"></div>
+
+<script>
+const board = document.getElementById("board");
+let currentPlayer = "chess";
+let selected = null;
+let game = [];
+
+// Initialize empty board
+for (let y = 0; y < 10; y++) {
+  game[y] = [];
+  for (let x = 0; x < 9; x++) {
+    game[y][x] = null;
+  }
+}
+
+// Simple starting pieces
+game[9][4] = {type:"king", system:"chess"};
+game[9][3] = {type:"queen", system:"chess"};
+game[9][1] = {type:"knight", system:"chess"};
+game[9][7] = {type:"knight", system:"chess"};
+game[6][4] = {type:"pawn", system:"chess"};
+
+game[0][4] = {type:"general", system:"xiangqi"};
+game[2][4] = {type:"cannon", system:"xiangqi"};
+game[3][4] = {type:"soldier", system:"xiangqi"};
+
+function draw() {
+  board.innerHTML = "";
+  for (let y = 0; y < 10; y++) {
+    for (let x = 0; x < 9; x++) {
+      const cell = document.createElement("div");
+      cell.className = "cell";
+      if ((x+y)%2) cell.classList.add("dark");
+
+      const piece = game[y][x];
+      if (piece) {
+        cell.textContent = pieceSymbol(piece);
+      }
+
+      cell.onclick = () => handleClick(x,y);
+      board.appendChild(cell);
+    }
+  }
+}
+
+function pieceSymbol(p) {
+  if (p.system === "chess") {
+    return {
+      king:"♔", queen:"♕", knight:"♘", pawn:"♙"
+    }[p.type];
+  } else {
+    return {
+      general:"将", cannon:"炮", soldier:"兵"
+    }[p.type];
+  }
+}
+
+function handleClick(x,y) {
+  const piece = game[y][x];
+
+  if (selected) {
+    const moves = getMoves(selected.x, selected.y);
+    if (moves.some(m => m.x===x && m.y===y)) {
+      game[y][x] = game[selected.y][selected.x];
+      game[selected.y][selected.x] = null;
+      selected = null;
+      switchTurn();
+      draw();
+      return;
+    }
+  }
+
+  if (piece && piece.system === currentPlayer) {
+    selected = {x,y};
+    draw();
+    highlightMoves(x,y);
+  }
+}
+
+function highlightMoves(x,y) {
+  const moves = getMoves(x,y);
+  const cells = document.querySelectorAll(".cell");
+  moves.forEach(m => {
+    const index = m.y*9 + m.x;
+    cells[index].classList.add("highlight");
+  });
+}
+
+function switchTurn() {
+  currentPlayer = currentPlayer === "chess" ? "xiangqi" : "chess";
+  document.getElementById("turn").textContent =
+    "Turn: " + (currentPlayer === "chess" ? "Chess" : "Xiangqi");
+}
+
+// --- Movement Rules ---
+
+function getMoves(x,y) {
+  const piece = game[y][x];
+  if (!piece) return [];
+
+  if (piece.system === "chess") {
+    return chessMoves(x,y,piece);
+  } else {
+    return xiangqiMoves(x,y,piece);
+  }
+}
+
+// Basic Chess
+function chessMoves(x,y,p) {
+  let moves = [];
+  if (p.type === "pawn") {
+    if (y>0) moves.push({x,y:y-1});
+  }
+  if (p.type === "knight") {
+    [[1,2],[2,1],[-1,2],[-2,1]].forEach(d=>{
+      let nx=x+d[0], ny=y-d[1];
+      if (inBoard(nx,ny)) moves.push({x:nx,y:ny});
+    });
+  }
+  if (p.type === "queen" || p.type === "king") {
+    for (let dx=-1;dx<=1;dx++){
+      for (let dy=-1;dy<=1;dy++){
+        if(dx||dy){
+          let nx=x+dx, ny=y+dy;
+          if(inBoard(nx,ny)) moves.push({x:nx,y:ny});
+        }
+      }
+    }
+  }
+  return moves;
+}
+
+// Basic Xiangqi
+function xiangqiMoves(x,y,p) {
+  let moves = [];
+
+  if (p.type === "soldier") {
+    if (y<9) moves.push({x,y:y+1});
+  }
+
+  if (p.type === "general") {
+    [[1,0],[-1,0],[0,1],[0,-1]].forEach(d=>{
+      let nx=x+d[0], ny=y+d[1];
+      if (inBoard(nx,ny)) moves.push({x:nx,y:ny});
+    });
+  }
+
+  if (p.type === "cannon") {
+    for (let i=1;i<9;i++) {
+      if (inBoard(x+i,y)) moves.push({x:x+i,y});
+      if (inBoard(x-i,y)) moves.push({x:x-i,y});
+    }
+  }
+
+  return moves;
+}
+
+function inBoard(x,y){
+  return x>=0 && x<9 && y>=0 && y<10;
+}
+
+draw();
+</script>
+
+</body>
+</html>
