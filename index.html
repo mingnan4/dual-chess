@@ -19,29 +19,29 @@ body { font-family: Arial; text-align:center; }
 .cell {
   width:60px;height:60px;
   display:flex;align-items:center;justify-content:center;
-  font-size:22px;cursor:pointer;
+  font-size:11px;
+  font-weight:bold;
+  text-align:center;
+  cursor:pointer;
+  padding:2px;
 }
 
 .light { background:#f0d9b5; }
 .dark { background:#b58863; }
 .highlight { background:yellow !important; }
 
-#legend { margin-top:20px; font-size:14px; }
+.chess { color:blue; }
+.xiangqi { color:red; }
+
 </style>
 </head>
 
 <body>
 
-<h2>♟️ Chess vs 🀄 Xiangqi</h2>
+<h2>Chess vs Xiangqi</h2>
 <p id="turn">Turn: Chess</p>
 
 <div id="board"></div>
-
-<div id="legend">
-<b>Legend:</b><br>
-♔ King | ♕ Queen | ♖ Rook | ♗ Bishop | ♘ Knight | ♙ Pawn<br>
-将 General | 士 Advisor | 象 Elephant | 馬 Horse | 車 Chariot | 炮 Cannon | 兵 Soldier
-</div>
 
 <script>
 const board = document.getElementById("board");
@@ -75,7 +75,7 @@ for(let i=0;i<9;i+=2){
   game[3][i]={type:"soldier",system:"xiangqi"};
 }
 
-// DRAW BOARD
+// DRAW
 function draw(){
   board.innerHTML="";
   for(let y=0;y<10;y++){
@@ -84,7 +84,10 @@ function draw(){
       cell.className="cell "+((x+y)%2?"dark":"light");
 
       let p=game[y][x];
-      if(p) cell.textContent=symbol(p);
+      if(p){
+        cell.textContent = name(p);
+        cell.classList.add(p.system);
+      }
 
       cell.onclick=()=>click(x,y);
       board.appendChild(cell);
@@ -92,16 +95,31 @@ function draw(){
   }
 }
 
-// SYMBOLS
-function symbol(p){
+// NAME LABELS
+function name(p){
   if(p.system==="chess"){
-    return {king:"♔",queen:"♕",rook:"♖",bishop:"♗",knight:"♘",pawn:"♙"}[p.type];
+    return {
+      king:"KING",
+      queen:"QUEEN",
+      rook:"ROOK",
+      bishop:"BISHOP",
+      knight:"KNIGHT",
+      pawn:"PAWN"
+    }[p.type];
   } else {
-    return {general:"将",advisor:"士",elephant:"象",horse:"馬",chariot:"車",cannon:"炮",soldier:"兵"}[p.type];
+    return {
+      general:"GENERAL",
+      advisor:"ADVISOR",
+      elephant:"ELEPHANT",
+      horse:"HORSE",
+      chariot:"CHARIOT",
+      cannon:"CANNON",
+      soldier:"SOLDIER"
+    }[p.type];
   }
 }
 
-// CLICK HANDLER (FIXED: NO FRIENDLY FIRE)
+// CLICK (NO FRIENDLY FIRE)
 function click(x,y){
   let p=game[y][x];
 
@@ -112,12 +130,11 @@ function click(x,y){
 
       let target = game[y][x];
 
-      // 🚫 PREVENT capturing your own piece
+      // block friendly fire
       if(target && target.system === current){
         return;
       }
 
-      // ✅ MOVE
       game[y][x]=game[selected.y][selected.x];
       game[selected.y][selected.x]=null;
 
@@ -135,7 +152,7 @@ function click(x,y){
   }
 }
 
-// HIGHLIGHT MOVES
+// HIGHLIGHT
 function highlight(x,y){
   let moves=getMoves(x,y);
   let cells=document.querySelectorAll(".cell");
@@ -145,20 +162,20 @@ function highlight(x,y){
   });
 }
 
-// TURN SWITCH
+// TURN
 function switchTurn(){
   current=current==="chess"?"xiangqi":"chess";
   document.getElementById("turn").textContent="Turn: "+(current==="chess"?"Chess":"Xiangqi");
 }
 
-// MOVE GENERATION
+// MOVE LOGIC
 function getMoves(x,y){
   let p=game[y][x];
   if(!p) return [];
   return p.system==="chess" ? chessMoves(x,y,p) : xiangqiMoves(x,y,p);
 }
 
-// CHESS MOVES
+// CHESS
 function chessMoves(x,y,p){
   let m=[];
   let dirs=[[1,0],[-1,0],[0,1],[0,-1],[1,1],[-1,-1],[1,-1],[-1,1]];
@@ -197,7 +214,7 @@ function chessMoves(x,y,p){
   return m;
 }
 
-// XIANGQI MOVES
+// XIANGQI
 function xiangqiMoves(x,y,p){
   let m=[];
 
@@ -230,7 +247,7 @@ function xiangqiMoves(x,y,p){
   return m;
 }
 
-// SLIDING PIECES
+// SLIDE
 function slide(m,x,y,dirs){
   dirs.forEach(d=>{
     for(let i=1;i<10;i++){
@@ -249,7 +266,7 @@ function inBoard(x,y){
   return x>=0 && x<9 && y>=0 && y<10;
 }
 
-// START GAME
+// START
 draw();
 </script>
 
