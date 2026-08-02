@@ -2,30 +2,29 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Dual Chess (Chess vs Xiangqi)</title>
+<title>Dual Chess</title>
 <style>
-  body { font-family: Arial; text-align: center; }
-  #board {
-    display: grid;
-    grid-template-columns: repeat(9, 60px);
-    grid-template-rows: repeat(10, 60px);
-    gap: 2px;
-    justify-content: center;
-    margin-top: 20px;
-  }
-  .cell {
-    width: 60px; height: 60px;
-    background: #f0d9b5;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    font-size: 22px;
-  }
-  .dark { background: #b58863; }
-  .highlight { background: yellow !important; }
+body { font-family: Arial; text-align:center; }
+#board {
+  display:grid;
+  grid-template-columns: repeat(9,60px);
+  grid-template-rows: repeat(10,60px);
+  gap:2px;
+  justify-content:center;
+  margin-top:20px;
+}
+.cell {
+  width:60px;height:60px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:22px;cursor:pointer;
+}
+.light { background:#f0d9b5; }
+.dark { background:#b58863; }
+.highlight { background:yellow !important; }
+#legend { margin-top:20px; font-size:14px; }
 </style>
 </head>
+
 <body>
 
 <h2>♟️ Chess vs 🀄 Xiangqi</h2>
@@ -33,160 +32,188 @@
 
 <div id="board"></div>
 
+<div id="legend">
+<b>Legend:</b><br>
+♔ King | ♕ Queen | ♖ Rook | ♗ Bishop | ♘ Knight | ♙ Pawn<br>
+将 General | 士 Advisor | 象 Elephant | 馬 Horse | 車 Chariot | 炮 Cannon | 兵 Soldier
+</div>
+
 <script>
 const board = document.getElementById("board");
-let currentPlayer = "chess";
-let selected = null;
 let game = [];
+let selected = null;
+let current = "chess";
 
-// Initialize empty board
-for (let y = 0; y < 10; y++) {
-  game[y] = [];
-  for (let x = 0; x < 9; x++) {
-    game[y][x] = null;
-  }
+// init empty
+for(let y=0;y<10;y++){
+  game[y]=[];
+  for(let x=0;x<9;x++) game[y][x]=null;
 }
 
-// Simple starting pieces
-game[9][4] = {type:"king", system:"chess"};
-game[9][3] = {type:"queen", system:"chess"};
-game[9][1] = {type:"knight", system:"chess"};
-game[9][7] = {type:"knight", system:"chess"};
-game[6][4] = {type:"pawn", system:"chess"};
+// --- CHESS SETUP ---
+let chessBack = ["rook","knight","bishop","queen","king","bishop","knight","rook"];
+for(let i=0;i<8;i++){
+  game[9][i]={type:chessBack[i],system:"chess"};
+  game[8][i]={type:"pawn",system:"chess"};
+}
 
-game[0][4] = {type:"general", system:"xiangqi"};
-game[2][4] = {type:"cannon", system:"xiangqi"};
-game[3][4] = {type:"soldier", system:"xiangqi"};
+// --- XIANGQI SETUP ---
+game[0][0]=game[0][8]={type:"chariot",system:"xiangqi"};
+game[0][1]=game[0][7]={type:"horse",system:"xiangqi"};
+game[0][2]=game[0][6]={type:"elephant",system:"xiangqi"};
+game[0][3]=game[0][5]={type:"advisor",system:"xiangqi"};
+game[0][4]={type:"general",system:"xiangqi"};
 
-function draw() {
-  board.innerHTML = "";
-  for (let y = 0; y < 10; y++) {
-    for (let x = 0; x < 9; x++) {
-      const cell = document.createElement("div");
-      cell.className = "cell";
-      if ((x+y)%2) cell.classList.add("dark");
+game[2][1]=game[2][7]={type:"cannon",system:"xiangqi"};
 
-      const piece = game[y][x];
-      if (piece) {
-        cell.textContent = pieceSymbol(piece);
-      }
+for(let i=0;i<9;i+=2){
+  game[3][i]={type:"soldier",system:"xiangqi"};
+}
 
-      cell.onclick = () => handleClick(x,y);
+// draw
+function draw(){
+  board.innerHTML="";
+  for(let y=0;y<10;y++){
+    for(let x=0;x<9;x++){
+      let cell=document.createElement("div");
+      cell.className="cell "+((x+y)%2?"dark":"light");
+
+      let p=game[y][x];
+      if(p) cell.textContent=symbol(p);
+
+      cell.onclick=()=>click(x,y);
       board.appendChild(cell);
     }
   }
 }
 
-function pieceSymbol(p) {
-  if (p.system === "chess") {
-    return {
-      king:"♔", queen:"♕", knight:"♘", pawn:"♙"
-    }[p.type];
+function symbol(p){
+  if(p.system==="chess"){
+    return {king:"♔",queen:"♕",rook:"♖",bishop:"♗",knight:"♘",pawn:"♙"}[p.type];
   } else {
-    return {
-      general:"将", cannon:"炮", soldier:"兵"
-    }[p.type];
+    return {general:"将",advisor:"士",elephant:"象",horse:"馬",chariot:"車",cannon:"炮",soldier:"兵"}[p.type];
   }
 }
 
-function handleClick(x,y) {
-  const piece = game[y][x];
+function click(x,y){
+  let p=game[y][x];
 
-  if (selected) {
-    const moves = getMoves(selected.x, selected.y);
-    if (moves.some(m => m.x===x && m.y===y)) {
-      game[y][x] = game[selected.y][selected.x];
-      game[selected.y][selected.x] = null;
-      selected = null;
+  if(selected){
+    let moves=getMoves(selected.x,selected.y);
+    if(moves.some(m=>m.x===x && m.y===y)){
+      game[y][x]=game[selected.y][selected.x];
+      game[selected.y][selected.x]=null;
+      selected=null;
       switchTurn();
       draw();
       return;
     }
   }
 
-  if (piece && piece.system === currentPlayer) {
-    selected = {x,y};
+  if(p && p.system===current){
+    selected={x,y};
     draw();
-    highlightMoves(x,y);
+    highlight(x,y);
   }
 }
 
-function highlightMoves(x,y) {
-  const moves = getMoves(x,y);
-  const cells = document.querySelectorAll(".cell");
-  moves.forEach(m => {
-    const index = m.y*9 + m.x;
-    cells[index].classList.add("highlight");
+function highlight(x,y){
+  let moves=getMoves(x,y);
+  let cells=document.querySelectorAll(".cell");
+  moves.forEach(m=>{
+    cells[m.y*9+m.x].classList.add("highlight");
   });
 }
 
-function switchTurn() {
-  currentPlayer = currentPlayer === "chess" ? "xiangqi" : "chess";
-  document.getElementById("turn").textContent =
-    "Turn: " + (currentPlayer === "chess" ? "Chess" : "Xiangqi");
+function switchTurn(){
+  current=current==="chess"?"xiangqi":"chess";
+  document.getElementById("turn").textContent="Turn: "+(current==="chess"?"Chess":"Xiangqi");
 }
 
-// --- Movement Rules ---
+// --- MOVE LOGIC (simplified but playable) ---
 
-function getMoves(x,y) {
-  const piece = game[y][x];
-  if (!piece) return [];
-
-  if (piece.system === "chess") {
-    return chessMoves(x,y,piece);
-  } else {
-    return xiangqiMoves(x,y,piece);
-  }
+function getMoves(x,y){
+  let p=game[y][x];
+  if(!p) return [];
+  return p.system==="chess" ? chessMoves(x,y,p) : xiangqiMoves(x,y,p);
 }
 
-// Basic Chess
-function chessMoves(x,y,p) {
-  let moves = [];
-  if (p.type === "pawn") {
-    if (y>0) moves.push({x,y:y-1});
+function chessMoves(x,y,p){
+  let m=[];
+  let dirs=[[1,0],[-1,0],[0,1],[0,-1],[1,1],[-1,-1],[1,-1],[-1,1]];
+
+  if(p.type==="pawn"){
+    if(y>0) m.push({x,y:y-1});
   }
-  if (p.type === "knight") {
-    [[1,2],[2,1],[-1,2],[-2,1]].forEach(d=>{
-      let nx=x+d[0], ny=y-d[1];
-      if (inBoard(nx,ny)) moves.push({x:nx,y:ny});
+
+  if(p.type==="knight"){
+    [[1,2],[2,1],[-1,2],[-2,1],[1,-2],[2,-1],[-1,-2],[-2,-1]]
+    .forEach(d=>{let nx=x+d[0],ny=y+d[1]; if(inBoard(nx,ny)) m.push({x:nx,y:ny});});
+  }
+
+  if(p.type==="bishop"){
+    slide(m,x,y,[[1,1],[-1,-1],[1,-1],[-1,1]]);
+  }
+
+  if(p.type==="rook"){
+    slide(m,x,y,[[1,0],[-1,0],[0,1],[0,-1]]);
+  }
+
+  if(p.type==="queen"){
+    slide(m,x,y,dirs);
+  }
+
+  if(p.type==="king"){
+    dirs.forEach(d=>{
+      let nx=x+d[0],ny=y+d[1];
+      if(inBoard(nx,ny)) m.push({x:nx,y:ny});
     });
   }
-  if (p.type === "queen" || p.type === "king") {
-    for (let dx=-1;dx<=1;dx++){
-      for (let dy=-1;dy<=1;dy++){
-        if(dx||dy){
-          let nx=x+dx, ny=y+dy;
-          if(inBoard(nx,ny)) moves.push({x:nx,y:ny});
-        }
-      }
-    }
-  }
-  return moves;
+
+  return m;
 }
 
-// Basic Xiangqi
-function xiangqiMoves(x,y,p) {
-  let moves = [];
+function slide(m,x,y,dirs){
+  dirs.forEach(d=>{
+    for(let i=1;i<10;i++){
+      let nx=x+d[0]*i, ny=y+d[1]*i;
+      if(!inBoard(nx,ny)) break;
+      m.push({x:nx,y:ny});
+      if(game[ny][nx]) break;
+    }
+  });
+}
 
-  if (p.type === "soldier") {
-    if (y<9) moves.push({x,y:y+1});
+function xiangqiMoves(x,y,p){
+  let m=[];
+
+  if(p.type==="soldier"){
+    if(y<9) m.push({x,y:y+1});
   }
 
-  if (p.type === "general") {
+  if(p.type==="general"){
     [[1,0],[-1,0],[0,1],[0,-1]].forEach(d=>{
-      let nx=x+d[0], ny=y+d[1];
-      if (inBoard(nx,ny)) moves.push({x:nx,y:ny});
+      let nx=x+d[0],ny=y+d[1];
+      if(inBoard(nx,ny)) m.push({x:nx,y:ny});
     });
   }
 
-  if (p.type === "cannon") {
-    for (let i=1;i<9;i++) {
-      if (inBoard(x+i,y)) moves.push({x:x+i,y});
-      if (inBoard(x-i,y)) moves.push({x:x-i,y});
-    }
+  if(p.type==="horse"){
+    [[1,2],[2,1],[-1,2],[-2,1]].forEach(d=>{
+      let nx=x+d[0],ny=y+d[1];
+      if(inBoard(nx,ny)) m.push({x:nx,y:ny});
+    });
   }
 
-  return moves;
+  if(p.type==="chariot"){
+    slide(m,x,y,[[1,0],[-1,0],[0,1],[0,-1]]);
+  }
+
+  if(p.type==="cannon"){
+    slide(m,x,y,[[1,0],[-1,0],[0,1],[0,-1]]);
+  }
+
+  return m;
 }
 
 function inBoard(x,y){
